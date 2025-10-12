@@ -1,0 +1,432 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <title>Street Names Explorer - Working Version</title>
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" />
+    <style>
+        * {
+            box-sizing: border-box;
+        }
+        
+        body {
+            margin: 0;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: #f5f7fa;
+            color: #333;
+        }
+        
+        .header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            text-align: center;
+            padding: 15px 0;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        
+        .header h1 {
+            margin: 0;
+            font-size: 2em;
+            font-weight: 300;
+        }
+        
+        .header p {
+            margin: 5px 0 0 0;
+            opacity: 0.9;
+        }
+        
+        .main-container {
+            display: flex;
+            height: calc(100vh - 120px);
+            gap: 20px;
+            padding: 20px;
+            max-width: 1400px;
+            margin: 0 auto;
+        }
+        
+        .search-panel {
+            width: 350px;
+            background: white;
+            border-radius: 12px;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.1);
+            overflow: hidden;
+            display: flex;
+            flex-direction: column;
+        }
+        
+        .search-section {
+            padding: 20px;
+            border-bottom: 1px solid #eee;
+        }
+        
+        .search-section h3 {
+            margin: 0 0 15px 0;
+            color: #2c3e50;
+            font-size: 1.2em;
+        }
+        
+        .search-input-group {
+            display: flex;
+            margin-bottom: 15px;
+            gap: 10px;
+        }
+        
+        .search-input-group input {
+            flex: 1;
+            padding: 10px 12px;
+            border: 2px solid #e0e6ed;
+            border-radius: 6px;
+            font-size: 14px;
+        }
+        
+        .search-input-group input:focus {
+            outline: none;
+            border-color: #667eea;
+        }
+        
+        .search-input-group button {
+            padding: 10px 12px;
+            background: #667eea;
+            color: white;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            min-width: 45px;
+        }
+        
+        .search-input-group button:hover {
+            background: #5a6fd8;
+        }
+        
+        .street-info {
+            flex: 1;
+            padding: 20px;
+            overflow-y: auto;
+            display: none;
+        }
+        
+        .street-info.show {
+            display: block;
+        }
+        
+        .street-info h3 {
+            margin: 0 0 15px 0;
+            color: #2c3e50;
+            font-size: 1.3em;
+        }
+        
+        .summary {
+            background: #f8f9fa;
+            padding: 15px;
+            border-radius: 8px;
+            margin-bottom: 15px;
+            border-left: 4px solid #667eea;
+            font-weight: 500;
+        }
+        
+        .origin {
+            line-height: 1.6;
+            margin-bottom: 15px;
+            color: #555;
+        }
+        
+        .more-btn {
+            background: #28a745;
+            color: white;
+            border: none;
+            padding: 10px 15px;
+            border-radius: 6px;
+            cursor: pointer;
+            width: 100%;
+            margin-bottom: 15px;
+        }
+        
+        .more-btn:hover {
+            background: #218838;
+        }
+        
+        .details {
+            display: none;
+            padding-top: 15px;
+            border-top: 1px solid #eee;
+        }
+        
+        .details.show {
+            display: block;
+        }
+        
+        .fact-item {
+            display: flex;
+            gap: 15px;
+            padding: 12px;
+            background: #f8f9fa;
+            border-radius: 8px;
+            margin-bottom: 10px;
+            border-left: 3px solid #667eea;
+        }
+        
+        .fact-year {
+            background: #667eea;
+            color: white;
+            padding: 4px 8px;
+            border-radius: 4px;
+            font-weight: bold;
+            font-size: 12px;
+            min-width: 50px;
+            text-align: center;
+        }
+        
+        .fact-text {
+            flex: 1;
+            line-height: 1.4;
+            color: #555;
+        }
+        
+        .search-results {
+            max-height: 200px;
+            overflow-y: auto;
+            padding: 0 20px 20px 20px;
+            display: none;
+        }
+        
+        .search-results.show {
+            display: block;
+        }
+        
+        .search-results h4 {
+            margin: 0 0 10px 0;
+            color: #2c3e50;
+        }
+        
+        .results-list {
+            list-style: none;
+            padding: 0;
+            margin: 0;
+        }
+        
+        .results-list li {
+            padding: 10px;
+            border-radius: 6px;
+            margin-bottom: 8px;
+            cursor: pointer;
+            border: 1px solid #e0e6ed;
+        }
+        
+        .results-list li:hover {
+            background: #f8f9fa;
+            border-color: #667eea;
+        }
+        
+        .result-name {
+            font-weight: 600;
+            color: #2c3e50;
+            margin-bottom: 5px;
+        }
+        
+        .result-summary {
+            font-size: 13px;
+            color: #666;
+        }
+        
+        .random-fact {
+            padding: 20px;
+            background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+            color: white;
+            margin-top: auto;
+        }
+        
+        .random-fact h4 {
+            margin: 0 0 10px 0;
+        }
+        
+        .random-fact p {
+            margin: 0 0 15px 0;
+            line-height: 1.4;
+        }
+        
+        .random-fact button {
+            background: rgba(255,255,255,0.2);
+            color: white;
+            border: 1px solid rgba(255,255,255,0.3);
+            padding: 8px 16px;
+            border-radius: 6px;
+            cursor: pointer;
+        }
+        
+        .random-fact button:hover {
+            background: rgba(255,255,255,0.3);
+        }
+        
+        .map-container {
+            flex: 1;
+            border-radius: 12px;
+            overflow: hidden;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.1);
+            position: relative;
+            background: white;
+        }
+        
+        #map {
+            height: 100%;
+            width: 100%;
+        }
+        
+        .map-controls {
+            position: absolute;
+            top: 15px;
+            right: 15px;
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+            z-index: 1000;
+        }
+        
+        .map-controls button {
+            width: 40px;
+            height: 40px;
+            background: white;
+            border: 2px solid #ddd;
+            border-radius: 6px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 16px;
+            color: #333;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        
+        .map-controls button:hover {
+            background: #667eea;
+            color: white;
+            border-color: #667eea;
+        }
+        
+        .loading-overlay {
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(255,255,255,0.9);
+            display: none;
+            align-items: center;
+            justify-content: center;
+            z-index: 2000;
+            flex-direction: column;
+        }
+        
+        .loading-overlay.show {
+            display: flex;
+        }
+        
+        .spinner {
+            width: 40px;
+            height: 40px;
+            border: 4px solid #f3f3f3;
+            border-top: 4px solid #667eea;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+        }
+        
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        
+        .notification {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            padding: 12px 20px;
+            border-radius: 8px;
+            color: white;
+            font-weight: 500;
+            z-index: 4000;
+            max-width: 300px;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.3);
+        }
+        
+        .notification.success { background: #28a745; }
+        .notification.error { background: #dc3545; }
+        .notification.warning { background: #ffc107; color: #333; }
+        .notification.info { background: #17a2b8; }
+        
+        .street-popup h4 {
+            margin: 0 0 10px 0;
+            color: #2c3e50;
+        }
+        
+        .street-popup button {
+            background: #667eea;
+            color: white;
+            border: none;
+            padding: 6px 12px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 12px;
+            margin-top: 8px;
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <h1><i class="fas fa-map-marked-alt"></i> Street Names Explorer</h1>
+        <p>Discover the fascinating stories behind street names around the world</p>
+    </div>
+
+    <div class="main-container">
+        <div class="search-panel">
+            <div class="search-section">
+                <h3><i class="fas fa-search"></i> Search Streets</h3>
+                <div class="search-input-group">
+                    <input type="text" id="locationSearch" placeholder="Enter city, address, or location...">
+                    <button id="searchLocationBtn"><i class="fas fa-search"></i></button>
+                </div>
+                <div class="search-input-group">
+                    <input type="text" id="streetNameSearch" placeholder="Search street names (e.g., Broadway)...">
+                    <button id="searchStreetBtn"><i class="fas fa-road"></i></button>
+                </div>
+            </div>
+
+            <div id="streetInfo" class="street-info">
+                <h3 id="streetTitle">Street Information</h3>
+                <div id="streetSummary" class="summary"></div>
+                <div id="streetOrigin" class="origin"></div>
+                <button id="moreInfoBtn" class="more-btn">More Details <i class="fas fa-chevron-down"></i></button>
+                <div id="streetDetails" class="details">
+                    <h4>Historical Facts</h4>
+                    <div id="streetFacts"></div>
+                </div>
+            </div>
+
+            <div id="searchResults" class="search-results">
+                <h4>Search Results</h4>
+                <ul id="resultsList" class="results-list"></ul>
+            </div>
+
+            <div class="random-fact">
+                <h4><i class="fas fa-lightbulb"></i> Did You Know?</h4>
+                <p id="factText">Loading interesting street fact...</p>
+                <button id="newFactBtn">New Fact</button>
+            </div>
+        </div>
+
+        <div class="map-container">
+            <div id="map"></div>
+            <div class="map-controls">
+                <button id="locateBtn" title="Find my location"><i class="fas fa-crosshairs"></i></button>
+                <button id="fullscreenBtn" title="Toggle fullscreen"><i class="fas fa-expand"></i></button>
+            </div>
+            <div id="loadingOverlay" class="loading-overlay">
+                <div class="spinner"></div>
+                <p>Loading street information...</p>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+    <script src="script.js"></script>
+</body>
+</html>

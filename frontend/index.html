@@ -1,0 +1,1359 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>🛣️ Street Names Explorer - Discover the Stories Behind Street Names</title>
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🛣️</text></svg>">
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" />
+    <style>
+        * {
+            box-sizing: border-box;
+        }
+        
+        body {
+            margin: 0;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: #f5f7fa;
+            color: #333;
+        }
+        
+        .header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            text-align: center;
+            padding: 15px 0;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        
+        .header h1 {
+            margin: 0;
+            font-size: 2em;
+            font-weight: 300;
+        }
+        
+        .header p {
+            margin: 5px 0 0 0;
+            opacity: 0.9;
+        }
+        
+        .main-container {
+            display: flex;
+            height: calc(100vh - 120px);
+            gap: 20px;
+            padding: 20px;
+            max-width: 1400px;
+            margin: 0 auto;
+        }
+        
+        .search-panel {
+            width: 350px;
+            background: white;
+            border-radius: 12px;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.1);
+            overflow: hidden;
+            display: flex;
+            flex-direction: column;
+        }
+        
+        .search-section {
+            padding: 20px;
+            border-bottom: 1px solid #eee;
+        }
+        
+        .search-section h3 {
+            margin: 0 0 15px 0;
+            color: #2c3e50;
+            font-size: 1.2em;
+        }
+        
+        .search-input-group {
+            display: flex;
+            margin-bottom: 15px;
+            gap: 10px;
+        }
+        
+        .search-input-group input {
+            flex: 1;
+            padding: 10px 12px;
+            border: 2px solid #e0e6ed;
+            border-radius: 6px;
+            font-size: 14px;
+        }
+        
+        .search-input-group input:focus {
+            outline: none;
+            border-color: #667eea;
+        }
+        
+        .search-input-group button {
+            padding: 10px 12px;
+            background: #667eea;
+            color: white;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            min-width: 45px;
+        }
+        
+        .search-input-group button:hover {
+            background: #5a6fd8;
+        }
+        
+        .street-info {
+            flex: 1;
+            padding: 20px;
+            overflow-y: auto;
+            display: none;
+        }
+        
+        .street-info.show {
+            display: block;
+        }
+        
+        .street-info h3 {
+            margin: 0 0 15px 0;
+            color: #2c3e50;
+            font-size: 1.3em;
+        }
+        
+        .summary {
+            background: #f8f9fa;
+            padding: 15px;
+            border-radius: 8px;
+            margin-bottom: 15px;
+            border-left: 4px solid #667eea;
+            font-weight: 500;
+        }
+        
+        .origin {
+            line-height: 1.6;
+            margin-bottom: 15px;
+            color: #555;
+        }
+        
+        .more-btn {
+            background: #28a745;
+            color: white;
+            border: none;
+            padding: 10px 15px;
+            border-radius: 6px;
+            cursor: pointer;
+            width: 100%;
+            margin-bottom: 15px;
+        }
+        
+        .more-btn:hover {
+            background: #218838;
+        }
+        
+        .details {
+            display: none;
+            padding-top: 15px;
+            border-top: 1px solid #eee;
+        }
+        
+        .details.show {
+            display: block;
+        }
+        
+        .fact-item {
+            display: flex;
+            gap: 15px;
+            padding: 12px;
+            background: #f8f9fa;
+            border-radius: 8px;
+            margin-bottom: 10px;
+            border-left: 3px solid #667eea;
+        }
+        
+        .fact-year {
+            background: #667eea;
+            color: white;
+            padding: 4px 8px;
+            border-radius: 4px;
+            font-weight: bold;
+            font-size: 12px;
+            min-width: 50px;
+            text-align: center;
+        }
+        
+        .fact-text {
+            flex: 1;
+            line-height: 1.4;
+            color: #555;
+        }
+        
+        .search-results {
+            max-height: 200px;
+            overflow-y: auto;
+            padding: 0 20px 20px 20px;
+            display: none;
+        }
+        
+        .search-results.show {
+            display: block;
+        }
+        
+        .search-results h4 {
+            margin: 0 0 10px 0;
+            color: #2c3e50;
+        }
+        
+        .results-list {
+            list-style: none;
+            padding: 0;
+            margin: 0;
+        }
+        
+        .results-list li {
+            padding: 10px;
+            border-radius: 6px;
+            margin-bottom: 8px;
+            cursor: pointer;
+            border: 1px solid #e0e6ed;
+        }
+        
+        .results-list li:hover {
+            background: #f8f9fa;
+            border-color: #667eea;
+        }
+        
+        .result-name {
+            font-weight: 600;
+            color: #2c3e50;
+            margin-bottom: 5px;
+        }
+        
+        .result-summary {
+            font-size: 13px;
+            color: #666;
+        }
+        
+        .random-fact {
+            padding: 20px;
+            background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+            color: white;
+            margin-top: auto;
+        }
+        
+        .random-fact h4 {
+            margin: 0 0 10px 0;
+        }
+        
+        .random-fact p {
+            margin: 0 0 15px 0;
+            line-height: 1.4;
+        }
+        
+        .random-fact button {
+            background: rgba(255,255,255,0.2);
+            color: white;
+            border: 1px solid rgba(255,255,255,0.3);
+            padding: 8px 16px;
+            border-radius: 6px;
+            cursor: pointer;
+        }
+        
+        .random-fact button:hover {
+            background: rgba(255,255,255,0.3);
+        }
+        
+        .map-container {
+            flex: 1;
+            border-radius: 12px;
+            overflow: hidden;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.1);
+            position: relative;
+            background: white;
+            min-height: 400px;
+        }
+        
+        #map {
+            height: 100% !important;
+            width: 100% !important;
+            min-height: 400px;
+        }
+        
+        .map-controls {
+            position: absolute;
+            top: 15px;
+            right: 15px;
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+            z-index: 1000;
+        }
+        
+        .map-controls button {
+            width: 40px;
+            height: 40px;
+            background: white;
+            border: 2px solid #ddd;
+            border-radius: 6px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 16px;
+            color: #333;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        
+        .map-controls button:hover {
+            background: #667eea;
+            color: white;
+            border-color: #667eea;
+        }
+        
+        .loading-overlay {
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(255,255,255,0.9);
+            display: none;
+            align-items: center;
+            justify-content: center;
+            z-index: 2000;
+            flex-direction: column;
+        }
+        
+        .loading-overlay.show {
+            display: flex;
+        }
+        
+        .spinner {
+            width: 40px;
+            height: 40px;
+            border: 4px solid #f3f3f3;
+            border-top: 4px solid #667eea;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+        }
+        
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        
+        .notification {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            padding: 12px 20px;
+            border-radius: 8px;
+            color: white;
+            font-weight: 500;
+            z-index: 4000;
+            max-width: 300px;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.3);
+        }
+        
+        .notification.success { background: #28a745; }
+        .notification.error { background: #dc3545; }
+        .notification.warning { background: #ffc107; color: #333; }
+        .notification.info { background: #17a2b8; }
+        
+        .street-popup h4 {
+            margin: 0 0 10px 0;
+            color: #2c3e50;
+        }
+        
+        .street-popup button {
+            background: #667eea;
+            color: white;
+            border: none;
+            padding: 6px 12px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 12px;
+            margin-top: 8px;
+            transition: background-color 0.2s ease;
+        }
+        
+        .street-popup button:hover {
+            background: #5a6fd8;
+        }
+        
+        .spinner {
+            border: 3px solid #f3f3f3;
+            border-top: 3px solid #667eea;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+        }
+        
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        
+        /* Custom styles for clickable streets */
+        .leaflet-interactive {
+            cursor: pointer !important;
+        }
+        
+        /* Enhanced street info panel */
+        .street-info.show {
+            animation: slideIn 0.3s ease-out;
+        }
+        
+        @keyframes slideIn {
+            from {
+                opacity: 0;
+                transform: translateX(-20px);
+            }
+            to {
+                opacity: 1;
+                transform: translateX(0);
+            }
+        }
+
+        /* Mobile Responsive Styles */
+        @media screen and (max-width: 768px) {
+            .container {
+                flex-direction: column;
+                height: 100vh;
+            }
+            
+            .search-panel {
+                width: 100%;
+                height: auto;
+                max-height: 40vh;
+                overflow-y: auto;
+                order: 2;
+                flex-shrink: 0;
+            }
+            
+            .map-container {
+                width: 100%;
+                height: 60vh;
+                order: 1;
+                flex-shrink: 0;
+            }
+            
+            #map {
+                height: 100%;
+                width: 100%;
+            }
+            
+            .search-input-group {
+                margin-bottom: 15px;
+            }
+            
+            .search-input-group input {
+                font-size: 16px; /* Prevents zoom on iOS */
+                padding: 12px;
+            }
+            
+            .search-input-group button {
+                padding: 12px 15px;
+                min-width: 50px;
+            }
+            
+            .random-fact {
+                padding: 15px;
+                margin-bottom: 10px;
+            }
+            
+            .random-fact h4 {
+                font-size: 16px;
+                margin-bottom: 10px;
+            }
+            
+            .random-fact p {
+                font-size: 13px;
+                line-height: 1.4;
+            }
+            
+            .random-fact button {
+                padding: 8px 12px;
+                font-size: 12px;
+                margin-top: 8px;
+            }
+            
+            .header h1 {
+                font-size: 20px;
+                padding: 10px 15px;
+            }
+            
+            .map-controls {
+                bottom: 15px;
+                right: 15px;
+            }
+            
+            .map-controls button {
+                width: 45px;
+                height: 45px;
+                font-size: 18px;
+                margin-left: 8px;
+            }
+            
+            /* Leaflet popup adjustments for mobile */
+            .leaflet-popup-content-wrapper {
+                max-width: calc(100vw - 40px) !important;
+            }
+            
+            .street-popup {
+                max-width: none !important;
+                width: 100% !important;
+            }
+            
+            .street-popup h4 {
+                font-size: 16px;
+                margin-bottom: 8px;
+            }
+            
+            .street-popup p {
+                font-size: 13px;
+                line-height: 1.4;
+            }
+            
+            .street-popup button {
+                padding: 10px 14px;
+                font-size: 13px;
+                margin: 5px 2px;
+            }
+        }
+        
+        /* Very small screens (phones in portrait) */
+        @media screen and (max-width: 480px) {
+            .header h1 {
+                font-size: 18px;
+                padding: 8px 10px;
+            }
+            
+            .search-panel {
+                padding: 10px;
+                max-height: 45vh;
+            }
+            
+            .map-container {
+                height: 55vh;
+            }
+            
+            .search-input-group input {
+                font-size: 16px;
+                padding: 10px;
+            }
+            
+            .random-fact {
+                padding: 12px;
+            }
+            
+            .random-fact h4 {
+                font-size: 15px;
+            }
+            
+            .random-fact p {
+                font-size: 12px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <h1><i class="fas fa-map-marked-alt"></i> Street Names Explorer</h1>
+        <p>Discover the fascinating stories behind street names around the world</p>
+    </div>
+
+    <div class="main-container">
+        <div class="search-panel">
+            <div class="search-section">
+                <h3><i class="fas fa-search"></i> Search Streets</h3>
+                <div class="search-input-group">
+                    <input type="text" id="locationSearch" placeholder="Enter city, address, or location...">
+                    <button id="searchLocationBtn"><i class="fas fa-search"></i></button>
+                </div>
+                <div class="search-input-group">
+                    <input type="text" id="streetNameSearch" placeholder="Search street names (e.g., Broadway)...">
+                    <button id="searchStreetBtn"><i class="fas fa-road"></i></button>
+                </div>
+            </div>
+
+
+
+            <div id="searchResults" class="search-results">
+                <h4>Search Results</h4>
+                <ul id="resultsList" class="results-list"></ul>
+            </div>
+
+            <div class="random-fact">
+                <h4><i class="fas fa-lightbulb"></i> Did You Know?</h4>
+                <p id="factText">Loading interesting street fact...</p>
+                <button id="newFactBtn">New Fact</button>
+            </div>
+        </div>
+
+        <div class="map-container">
+            <div id="map"></div>
+            <div class="map-controls">
+                <button id="locateBtn" title="Find my location"><i class="fas fa-crosshairs"></i></button>
+                <button id="fullscreenBtn" title="Toggle fullscreen"><i class="fas fa-expand"></i></button>
+            </div>
+            <div id="loadingOverlay" class="loading-overlay">
+                <div class="spinner"></div>
+                <p>Loading street information...</p>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+    <script>
+        // Global variables
+        let map;
+        let currentStreetInfo = null;
+        let streetMarkers = [];
+
+        // DOM elements
+        const locationSearchInput = document.getElementById("locationSearch");
+        const streetNameSearchInput = document.getElementById("streetNameSearch");
+        const searchLocationBtn = document.getElementById("searchLocationBtn");
+        const searchStreetBtn = document.getElementById("searchStreetBtn");
+        const searchResults = document.getElementById("searchResults");
+        const resultsList = document.getElementById("resultsList");
+        const factText = document.getElementById("factText");
+        const newFactBtn = document.getElementById("newFactBtn");
+        const locateBtn = document.getElementById("locateBtn");
+        const fullscreenBtn = document.getElementById("fullscreenBtn");
+        const loadingOverlay = document.getElementById("loadingOverlay");
+
+        // Initialize the application
+        document.addEventListener("DOMContentLoaded", function() {
+            try {
+                console.log('Street Names Explorer - DOM loaded, initializing...');
+                
+                // Try to setup event listeners
+                try {
+                    setupEventListeners();
+                    console.log('Event listeners setup complete');
+                } catch (eventError) {
+                    console.error('Error setting up event listeners:', eventError);
+                }
+                
+                // Try to start fact loop
+                try {
+                    startFactLoop();
+                    console.log('Fact loop started');
+                } catch (factError) {
+                    console.error('Error starting fact loop:', factError);
+                    // Fallback: load a single fact
+                    if (typeof loadRandomFact === 'function') {
+                        loadRandomFact();
+                    }
+                }
+                
+                // Initialize map
+                if (typeof L !== 'undefined') {
+                    console.log('Leaflet loaded, initializing map...');
+                    try {
+                        initializeMap();
+                    } catch (mapError) {
+                        console.error('Error initializing map:', mapError);
+                        showMapError('Map failed to initialize. Please refresh the page.');
+                    }
+                } else {
+                    console.log('Waiting for Leaflet to load...');
+                    setTimeout(() => {
+                        if (typeof L !== 'undefined') {
+                            try {
+                                initializeMap();
+                            } catch (mapError) {
+                                console.error('Error initializing map (delayed):', mapError);
+                                showMapError('Map failed to initialize. Please refresh the page.');
+                            }
+                        } else {
+                            console.error('Leaflet failed to load');
+                            showMapError('Map library failed to load. Please refresh the page.');
+                        }
+                    }, 2000);
+                }
+            } catch (initError) {
+                console.error('Critical initialization error:', initError);
+                alert('Application failed to initialize. Please refresh the page.');
+            }
+        });
+
+        // Initialize Leaflet map
+        function initializeMap() {
+            try {
+                console.log('Creating map...');
+                
+                const mapContainer = document.getElementById('map');
+                if (!mapContainer) {
+                    console.error('Map container not found!');
+                    return;
+                }
+                
+                console.log('Map container dimensions:', mapContainer.offsetWidth, 'x', mapContainer.offsetHeight);
+                
+                // Create map
+                map = L.map('map').setView([51.505, -0.09], 10);
+                
+                // Add tiles
+                L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+                    attribution: '© OpenStreetMap contributors',
+                    maxZoom: 18
+                }).addTo(map);
+                
+                // Add welcome marker
+                L.marker([51.5, -0.09]).addTo(map)
+                    .bindPopup('Welcome to Street Names Explorer!<br>Search for a location to begin.')
+                    .openPopup();
+                
+                // Add events
+                map.on('click', onMapClick);
+                map.on('zoomend', onMapZoom);
+                
+                console.log('✅ Map initialized successfully!');
+                showNotification('Map loaded! Search for a location to explore streets.', 'success');
+                
+            } catch (error) {
+                console.error('Error initializing map:', error);
+                showMapError('Failed to initialize map: ' + error.message);
+            }
+        }
+
+        // Setup event listeners
+        function setupEventListeners() {
+            if (searchLocationBtn) searchLocationBtn.addEventListener('click', searchLocation);
+            if (searchStreetBtn) searchStreetBtn.addEventListener('click', searchStreetNames);
+            if (newFactBtn) newFactBtn.addEventListener('click', () => {
+                loadRandomFact(); // Manually advance to next fact
+                startFactLoop(); // Restart the 10-second timer
+            });
+            if (locateBtn) locateBtn.addEventListener('click', locateUser);
+            if (fullscreenBtn) fullscreenBtn.addEventListener('click', toggleFullscreen);
+            
+            // Enter key support
+            if (locationSearchInput) {
+                locationSearchInput.addEventListener('keypress', (e) => {
+                    if (e.key === 'Enter') searchLocation();
+                });
+            }
+            
+            if (streetNameSearchInput) {
+                streetNameSearchInput.addEventListener('keypress', (e) => {
+                    if (e.key === 'Enter') searchStreetNames();
+                });
+            }
+        }
+
+        // Search for location
+        async function searchLocation() {
+            const query = locationSearchInput.value.trim();
+            if (!query) {
+                showNotification("Please enter a location to search", "warning");
+                return;
+            }
+            
+            showLoading(true);
+            
+            try {
+                const response = await fetch('/api/search-location', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ query })
+                });
+                
+                const data = await response.json();
+                
+                if (data.success && data.location) {
+                    map.setView([data.location.latitude, data.location.longitude], 15);
+                    
+                    const marker = L.marker([data.location.latitude, data.location.longitude])
+                        .addTo(map)
+                        .bindPopup(`<strong>${data.location.name}</strong>`)
+                        .openPopup();
+                    
+                    streetMarkers.push(marker);
+                    loadNearbyStreets(data.location.latitude, data.location.longitude);
+                    
+                    showNotification("Location found! Click on streets to learn about their names.", "success");
+                } else {
+                    showNotification("Location not found. Try a different search term.", "error");
+                }
+            } catch (error) {
+                console.error('Location search error:', error);
+                showNotification("Error searching for location", "error");
+            } finally {
+                showLoading(false);
+            }
+        }
+
+        // Search for street names
+        async function searchStreetNames() {
+            const query = streetNameSearchInput.value.trim();
+            if (!query) {
+                showNotification("Please enter a street name to search", "warning");
+                return;
+            }
+            
+            showLoading(true);
+            
+            try {
+                const response = await fetch(`/api/search-streets?q=${encodeURIComponent(query)}&limit=10`);
+                const data = await response.json();
+                
+                if (data.success && data.results.length > 0) {
+                    displaySearchResults(data.results);
+                    showNotification(`Found ${data.results.length} street name(s)`, "success");
+                } else {
+                    searchResults.classList.remove('show');
+                    showNotification("No streets found with that name", "info");
+                }
+            } catch (error) {
+                console.error('Street search error:', error);
+                showNotification("Error searching for street names", "error");
+            } finally {
+                showLoading(false);
+            }
+        }
+
+        // Display search results
+        function displaySearchResults(results) {
+            resultsList.innerHTML = '';
+            
+            results.forEach(result => {
+                const li = document.createElement('li');
+                li.innerHTML = `
+                    <div class="result-name">${result.name}</div>
+                    <div class="result-summary">${result.summary}</div>
+                `;
+                li.addEventListener('click', () => {
+                    streetNameSearchInput.value = result.name;
+                    searchResults.classList.remove('show');
+                });
+                resultsList.appendChild(li);
+            });
+            
+            searchResults.classList.add('show');
+        }
+
+        // Obsolete sidebar functions removed - using popups now
+
+        // Load nearby streets with enhanced data
+        async function loadNearbyStreets(lat, lon) {
+            try {
+                showNotification("Searching for streets in this area...", "info");
+                
+                const response = await fetch('/api/nearby-streets-enhanced', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ 
+                        lat: lat,
+                        lng: lon,
+                        radius: 2000  // Increased radius for more streets
+                    })
+                });
+                
+                const data = await response.json();
+                
+                if (data.success && data.streets) {
+                    displayNearbyStreets(data.streets);
+                    showNotification(`Found ${data.streets.length} streets! Click any street line to learn its story.`, "success");
+                } else {
+                    showNotification("No streets found in this area. Try clicking elsewhere on the map.", "warning");
+                }
+            } catch (error) {
+                console.error('Error loading nearby streets:', error);
+                showNotification("Error loading streets. Please try again.", "error");
+            }
+        }
+
+        // Display nearby streets on map
+        function displayNearbyStreets(streets) {
+            // Clear existing street markers
+            streetMarkers.forEach(marker => {
+                if (marker.options && marker.options.isStreet) {
+                    map.removeLayer(marker);
+                }
+            });
+            
+            streets.forEach(street => {
+                if (street.coordinates && street.coordinates.length > 0) {
+                    const polyline = L.polyline(street.coordinates, {
+                        color: '#667eea',
+                        weight: 4,
+                        opacity: 0.8,
+                        className: 'clickable-street'
+                    }).addTo(map);
+                    
+                    // Make streets more interactive
+                    polyline.on('mouseover', function() {
+                        this.setStyle({
+                            color: '#ff6b6b',
+                            weight: 6,
+                            opacity: 1
+                        });
+                    });
+                    
+                    polyline.on('mouseout', function() {
+                        this.setStyle({
+                            color: '#667eea',
+                            weight: 4,
+                            opacity: 0.8
+                        });
+                    });
+                    
+                    polyline.on('click', (e) => {
+                        showStreetPopup(street, polyline, e.latlng);
+                    });
+                    
+                    polyline.options.isStreet = true;
+                    streetMarkers.push(polyline);
+                }
+            });
+            
+            // Show notification about clickable streets
+            if (streets.length > 0) {
+                showNotification(`Found ${streets.length} streets nearby. Click on any street line to learn about its name!`, "info");
+            }
+        }
+
+        // Show street popup with inline information
+        async function showStreetPopup(street, polyline, clickLatLng = null) {
+            console.log('showStreetPopup called with:', street);
+            
+            if (!street || !street.name) {
+                console.error('Invalid street object:', street);
+                showNotification("Unable to load street information - invalid data", "error");
+                return;
+            }
+            
+            try {
+                const popupLatLng = clickLatLng || polyline.getBounds().getCenter();
+                
+                // Show loading popup first
+                const loadingPopup = L.popup({
+                    maxWidth: 400,
+                    closeButton: true,
+                    autoClose: false,
+                    closeOnClick: false
+                })
+                    .setLatLng(popupLatLng)
+                    .setContent(`
+                        <div class="street-popup">
+                            <h4>🛣️ ${street.name}</h4>
+                            <div style="text-align: center; padding: 20px;">
+                                <div class="spinner" style="width: 30px; height: 30px; margin: 0 auto 10px auto;"></div>
+                                <p>Loading street information...</p>
+                            </div>
+                        </div>
+                    `)
+                    .openOn(map);
+                
+                // Get street information
+                console.log('Fetching street info for:', street.name, street.city, street.country);
+                const streetInfo = await getStreetInfoForPopup(street.name, street.city || '', street.country || '');
+                
+                // Create enhanced popup content
+                const popupContent = `
+                    <div class="street-popup">
+                        <h4>🛣️ ${street.name}</h4>
+                        <p><strong>Type:</strong> ${street.type.charAt(0).toUpperCase() + street.type.slice(1)}</p>
+                        
+                        <div style="background: #f8f9fa; padding: 12px; border-radius: 6px; margin: 10px 0; border-left: 4px solid #667eea;">
+                            <h5 style="margin: 0 0 8px 0; color: #2c3e50;">📖 Why is it called "${street.name}"?</h5>
+                            <p style="margin: 0; line-height: 1.4; color: #555; font-size: 13px;">${streetInfo.origin}</p>
+                        </div>
+                        
+                        ${streetInfo.summary ? `
+                            <div style="background: #e3f2fd; padding: 10px; border-radius: 6px; margin: 10px 0;">
+                                <strong>💡 Quick Facts:</strong><br>
+                                <span style="font-size: 13px; color: #555;">${streetInfo.summary}</span>
+                            </div>
+                        ` : ''}
+                        
+                        ${streetInfo.facts && streetInfo.facts.length > 0 ? `
+                            <div style="margin-top: 10px;">
+                                <strong>📅 Historical Timeline:</strong>
+                                <div style="max-height: 150px; overflow-y: auto; margin-top: 5px;">
+                                    ${streetInfo.facts.map(fact => `
+                                        <div style="background: #fff3cd; padding: 8px; border-radius: 4px; margin: 5px 0; border-left: 3px solid #ffc107;">
+                                            <strong>${fact.year}:</strong> <span style="font-size: 12px;">${fact.fact}</span>
+                                        </div>
+                                    `).join('')}
+                                </div>
+                            </div>
+                        ` : ''}
+                        
+                        <div style="margin-top: 12px; text-align: center;">
+                            <button onclick="map.closePopup()" style="background: #6c757d; color: white; border: none; padding: 8px 16px; border-radius: 4px; cursor: pointer;">
+                                ✖️ Close
+                            </button>
+                        </div>
+                    </div>
+                `;
+                
+                // Update popup with full information
+                loadingPopup.setContent(popupContent);
+                
+            } catch (error) {
+                console.error('Error in street popup:', error);
+                
+                try {
+                    // Show error popup
+                    loadingPopup.setContent(`
+                        <div class="street-popup">
+                            <h4>🛣️ ${street.name || 'Unknown Street'}</h4>
+                            <p><strong>Type:</strong> ${(street.type || 'road').charAt(0).toUpperCase() + (street.type || 'road').slice(1)}</p>
+                            
+                            <div style="background: #f8d7da; padding: 12px; border-radius: 6px; margin: 10px 0; border-left: 4px solid #dc3545;">
+                                <p style="margin: 0; color: #721c24;">
+                                    ⚠️ Unable to find detailed information about this street name at the moment.
+                                </p>
+                            </div>
+                            
+                            <div style="margin-top: 12px; text-align: center;">
+                                <button onclick="map.closePopup()" style="background: #6c757d; color: white; border: none; padding: 8px 16px; border-radius: 4px; cursor: pointer;">
+                                    ✖️ Close
+                                </button>
+                            </div>
+                        </div>
+                    `);
+                } catch (popupError) {
+                    console.error('Error showing error popup:', popupError);
+                    showNotification("Error loading street information", "error");
+                }
+            }
+        }
+        
+        // Get street information for popup display
+        async function getStreetInfoForPopup(streetName, city = '', country = '') {
+            try {
+                const response = await fetch('/api/street-info-enhanced', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ 
+                        street_name: streetName,
+                        city: city,
+                        country: country
+                    })
+                });
+                
+                const data = await response.json();
+                
+                if (data.success && data.street_info) {
+                    return data.street_info;
+                } else {
+                    throw new Error('No street information found');
+                }
+            } catch (error) {
+                console.error('Error fetching street info:', error);
+                throw error;
+            }
+        }
+
+        // Map click handler
+        function onMapClick(e) {
+            const lat = e.latlng.lat;
+            const lon = e.latlng.lng;
+            
+            // Show a temporary marker where clicked
+            const clickMarker = L.circleMarker([lat, lon], {
+                color: '#ff6b6b',
+                fillColor: '#ff6b6b',
+                fillOpacity: 0.5,
+                radius: 8
+            }).addTo(map);
+            
+            // Remove click marker after 2 seconds
+            setTimeout(() => {
+                map.removeLayer(clickMarker);
+            }, 2000);
+            
+            // Load nearby streets
+            showNotification("Loading nearby streets...", "info");
+            loadNearbyStreets(lat, lon);
+        }
+
+        // Map zoom handler
+        function onMapZoom() {
+            const zoom = map.getZoom();
+            streetMarkers.forEach(marker => {
+                if (marker.options && marker.options.isStreet && marker.setStyle) {
+                    const weight = Math.max(1, Math.min(5, zoom - 10));
+                    marker.setStyle({ weight: weight });
+                }
+            });
+        }
+
+        // Load random street fact
+        let currentFactIndex = 0;
+        let factInterval;
+        
+        function loadRandomFact() {
+            try {
+                const facts = [
+                    "Broadway in New York City was originally a Native American trail called the Wickquasgeck Trail.",
+                    "Wall Street got its name from a wooden wall built by Dutch colonists in 1653 to defend New Amsterdam.",
+                    "Main Street is the most common street name in the United States, found in thousands of cities.",
+                    "Lombard Street in San Francisco is known as the 'most crooked street in the world' with eight hairpin turns.",
+                    "Fleet Street in London was historically the center of the British press and newspaper industry.",
+                    "The Champs-Élysées in Paris was originally fields until 1667 when it was transformed into a tree-lined avenue.",
+                    "Route 66, known as the 'Mother Road,' connected Chicago to Los Angeles and became an icon of American culture.",
+                    "Abbey Road in London became famous worldwide after The Beatles recorded their album there in 1969.",
+                    "Downing Street in London has been the official residence of British Prime Ministers since 1735.",
+                    "Pennsylvania Avenue connects the White House to the US Capitol, spanning exactly 1.2 miles.",
+                    "Oxford Street in London is Europe's busiest shopping street with over 300 shops.",
+                    "Rodeo Drive in Beverly Hills is one of the most expensive shopping streets in the world.",
+                    "La Rambla in Barcelona stretches 1.2 km from Plaça de Catalunya to the Christopher Columbus Monument.",
+                    "Fifth Avenue in New York was once lined with mansions of America's wealthiest families.",
+                    "Piccadilly Circus in London got its name from 'piccadills' - stiff collars sold by a local tailor.",
+                    "Via Dolorosa in Jerusalem is believed to be the path Jesus walked carrying the cross.",
+                    "Bourbon Street in New Orleans was named after the French royal House of Bourbon.",
+                    "Sunset Strip in West Hollywood became the heart of rock music culture in the 1960s-80s.",
+                    "King's Road in Chelsea, London was once a private road used only by King Charles II.",
+                    "Carnaby Street became the center of Swinging London fashion in the 1960s.",
+                    "Baker Street in London is famous for being the fictional home of Sherlock Holmes.",
+                    "Savile Row in London has been the heart of men's bespoke tailoring since the 1800s.",
+                    "Memory Lane doesn't exist as a real street - it's just a figure of speech for nostalgia.",
+                    "Dead End streets were originally called 'cul-de-sacs' from French meaning 'bottom of the bag'.",
+                    "One Way streets became popular in the 1960s to improve traffic flow in congested city centers."
+                ];
+                
+                if (factText && facts.length > 0) {
+                    factText.textContent = facts[currentFactIndex];
+                    currentFactIndex = (currentFactIndex + 1) % facts.length;
+                    console.log('Fact loaded:', facts[currentFactIndex - 1]);
+                } else {
+                    console.error('factText element not found or facts array empty');
+                }
+            } catch (error) {
+                console.error('Error loading random fact:', error);
+            }
+        }
+        
+        function startFactLoop() {
+            try {
+                console.log('Starting fact loop...');
+                
+                // Load first fact immediately
+                loadRandomFact();
+                
+                // Clear any existing interval
+                if (factInterval) {
+                    clearInterval(factInterval);
+                }
+                
+                // Start new interval for 10 seconds
+                factInterval = setInterval(() => {
+                    try {
+                        loadRandomFact();
+                    } catch (error) {
+                        console.error('Error in fact interval:', error);
+                    }
+                }, 10000);
+                
+                console.log('Fact loop started successfully');
+            } catch (error) {
+                console.error('Error starting fact loop:', error);
+            }
+        }
+        
+        function stopFactLoop() {
+            if (factInterval) {
+                clearInterval(factInterval);
+                factInterval = null;
+            }
+        }
+
+        // Locate user
+        function locateUser() {
+            if (!navigator.geolocation) {
+                showNotification("Geolocation is not supported by this browser", "error");
+                return;
+            }
+            
+            showLoading(true);
+            
+            navigator.geolocation.getCurrentPosition(
+                (position) => {
+                    const lat = position.coords.latitude;
+                    const lon = position.coords.longitude;
+                    
+                    map.setView([lat, lon], 15);
+                    
+                    const marker = L.marker([lat, lon])
+                        .addTo(map)
+                        .bindPopup("Your location")
+                        .openPopup();
+                    
+                    streetMarkers.push(marker);
+                    loadNearbyStreets(lat, lon);
+                    
+                    showNotification("Location found!", "success");
+                    showLoading(false);
+                },
+                (error) => {
+                    showNotification("Unable to get your location: " + error.message, "error");
+                    showLoading(false);
+                }
+            );
+        }
+
+        // Toggle fullscreen
+        function toggleFullscreen() {
+            if (!document.fullscreenElement) {
+                document.documentElement.requestFullscreen();
+                fullscreenBtn.innerHTML = '<i class="fas fa-compress"></i>';
+            } else {
+                document.exitFullscreen();
+                fullscreenBtn.innerHTML = '<i class="fas fa-expand"></i>';
+            }
+        }
+
+        // Show/hide loading overlay
+        function showLoading(show) {
+            if (show) {
+                loadingOverlay.classList.add('show');
+            } else {
+                loadingOverlay.classList.remove('show');
+            }
+        }
+
+        // Show map error
+        function showMapError(message) {
+            const mapContainer = document.getElementById('map');
+            if (mapContainer) {
+                mapContainer.innerHTML = `
+                    <div style="display: flex; align-items: center; justify-content: center; height: 100%; background: #f8f9fa; color: #666; flex-direction: column; text-align: center; padding: 20px;">
+                        <div style="font-size: 48px; margin-bottom: 20px;">🗺️</div>
+                        <h3 style="margin: 0 0 10px 0; color: #333;">Map Loading Error</h3>
+                        <p style="margin: 0 0 20px 0; max-width: 400px;">${message}</p>
+                        <button onclick="location.reload()" style="background: #667eea; color: white; border: none; padding: 10px 20px; border-radius: 6px; cursor: pointer;">Reload Page</button>
+                    </div>
+                `;
+            }
+        }
+
+        // Show notifications
+        // Enhanced notification system with mobile support
+        let notificationContainer = null;
+        let activeNotifications = [];
+        
+        function initNotificationContainer() {
+            if (!notificationContainer) {
+                notificationContainer = document.createElement("div");
+                notificationContainer.id = "notification-container";
+                
+                // Check if mobile
+                const isMobile = window.innerWidth <= 768;
+                
+                notificationContainer.style.cssText = `
+                    position: fixed;
+                    top: ${isMobile ? '10px' : '20px'};
+                    right: ${isMobile ? '10px' : '20px'};
+                    left: ${isMobile ? '10px' : 'auto'};
+                    z-index: 10001;
+                    pointer-events: none;
+                    max-width: ${isMobile ? 'calc(100vw - 20px)' : '400px'};
+                    width: ${isMobile ? 'calc(100vw - 20px)' : '400px'};
+                    display: block;
+                `;
+                document.body.appendChild(notificationContainer);
+                
+                // Update container on resize
+                window.addEventListener('resize', () => {
+                    const isMobileNow = window.innerWidth <= 768;
+                    notificationContainer.style.top = isMobileNow ? '10px' : '20px';
+                    notificationContainer.style.right = isMobileNow ? '10px' : '20px';
+                    notificationContainer.style.left = isMobileNow ? '10px' : 'auto';
+                    notificationContainer.style.maxWidth = isMobileNow ? 'calc(100vw - 20px)' : '400px';
+                });
+            }
+        }
+        
+        function showNotification(message, type = "info") {
+            initNotificationContainer();
+            
+            // Clear all existing notifications to prevent overlap
+            activeNotifications.forEach(notif => {
+                removeNotification(notif);
+            });
+            
+            // Clear the container completely
+            notificationContainer.innerHTML = '';
+            activeNotifications = [];
+            
+            const notification = document.createElement("div");
+            notification.className = `notification ${type}`;
+            notification.textContent = message;
+            
+            const isMobile = window.innerWidth <= 768;
+            
+            notification.style.cssText = `
+                padding: 12px 16px;
+                border-radius: 8px;
+                color: white;
+                font-size: ${isMobile ? '14px' : '15px'};
+                font-weight: 500;
+                box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+                backdrop-filter: blur(10px);
+                border: 1px solid rgba(255,255,255,0.1);
+                opacity: 0;
+                transform: ${isMobile ? 'translateY(-20px)' : 'translateX(100%)'};
+                transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+                pointer-events: auto;
+                cursor: pointer;
+                min-height: 40px;
+                display: block;
+                width: 100%;
+                word-wrap: break-word;
+                hyphens: auto;
+                box-sizing: border-box;
+                margin-bottom: 10px;
+                position: relative;
+                clear: both;
+            `;
+            
+            // Set background colors based on type
+            switch(type) {
+                case 'success': notification.style.background = 'linear-gradient(135deg, #10b981, #059669)'; break;
+                case 'error': notification.style.background = 'linear-gradient(135deg, #ef4444, #dc2626)'; break;
+                case 'warning': notification.style.background = 'linear-gradient(135deg, #f59e0b, #d97706)'; break;
+                case 'info': notification.style.background = 'linear-gradient(135deg, #3b82f6, #2563eb)'; break;
+                default: notification.style.background = 'linear-gradient(135deg, #6b7280, #4b5563)';
+            }
+            
+            // Click to dismiss
+            notification.addEventListener('click', () => {
+                removeNotification(notification);
+            });
+            
+            notificationContainer.appendChild(notification);
+            activeNotifications.push(notification);
+            
+            // Animate in
+            requestAnimationFrame(() => {
+                notification.style.opacity = "1";
+                notification.style.transform = "translateY(0) translateX(0)";
+            });
+            
+            // Auto remove after 5 seconds
+            setTimeout(() => {
+                removeNotification(notification);
+            }, 5000);
+        }
+        
+        function removeNotification(notification) {
+            if (notification && notification.parentNode) {
+                const isMobile = window.innerWidth <= 768;
+                notification.style.opacity = "0";
+                notification.style.transform = isMobile ? 'translateY(-20px)' : 'translateX(100%)';
+                notification.style.pointerEvents = "none";
+                
+                setTimeout(() => {
+                    if (notification.parentNode) {
+                        notification.parentNode.removeChild(notification);
+                        activeNotifications = activeNotifications.filter(n => n !== notification);
+                    }
+                }, 300);
+            }
+        }
+    </script>
+</body>
+</html>

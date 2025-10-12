@@ -1,0 +1,29 @@
+version: '3.8'
+
+services:
+  street-names-explorer:
+    build: .
+    container_name: street-names-explorer
+    ports:
+      - "8080:8080"
+    environment:
+      - FLASK_ENV=production
+      - PYTHONUNBUFFERED=1
+    volumes:
+      - ./data:/app/data  # Optional: for persistent data storage
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8080/api/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+    networks:
+      - street-explorer-network
+    labels:
+      - "com.docker.compose.project=street-names-explorer"
+      - "description=Interactive Street Names Explorer with Wikipedia Integration"
+
+networks:
+  street-explorer-network:
+    driver: bridge

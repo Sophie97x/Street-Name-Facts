@@ -1,0 +1,72 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <title>Map Test</title>
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+    <style>
+        #maptest { 
+            height: 400px; 
+            width: 100%; 
+            border: 2px solid red;
+            background: yellow;
+        }
+        body {
+            margin: 20px;
+            font-family: Arial, sans-serif;
+        }
+        .status {
+            padding: 10px;
+            margin: 10px 0;
+            border: 1px solid #ccc;
+            background: #f9f9f9;
+        }
+    </style>
+</head>
+<body>
+    <h1>Map Loading Test</h1>
+    
+    <div class="status" id="status">Loading...</div>
+    
+    <div id="maptest"></div>
+    
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+    <script>
+        const status = document.getElementById('status');
+        
+        function updateStatus(message) {
+            console.log(message);
+            status.innerHTML += '<br>' + message;
+        }
+        
+        updateStatus('Starting map test...');
+        
+        // Check if Leaflet loaded
+        if (typeof L === 'undefined') {
+            updateStatus('❌ ERROR: Leaflet library not loaded!');
+        } else {
+            updateStatus('✅ Leaflet library loaded successfully');
+            
+            try {
+                updateStatus('Creating map...');
+                const map = L.map('maptest').setView([51.505, -0.09], 13);
+                
+                updateStatus('Adding tiles...');
+                L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+                    attribution: '© OpenStreetMap contributors'
+                }).addTo(map);
+                
+                updateStatus('✅ Map created successfully!');
+                
+                // Add a test marker
+                L.marker([51.5, -0.09]).addTo(map)
+                    .bindPopup('Test marker - Map is working!')
+                    .openPopup();
+                    
+            } catch (error) {
+                updateStatus('❌ ERROR creating map: ' + error.message);
+            }
+        }
+    </script>
+</body>
+</html>
