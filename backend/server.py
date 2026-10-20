@@ -62,7 +62,7 @@ def search_location():
     except GeocoderTimedOut:
         return jsonify({"error": "Geocoding service timed out"}), 408
     except Exception as e:
-        return jsonify({"error": str(e)}), 500
+        return jsonify({"error": "Unable to complete the request. Please try again."}), 500
 
 @app.route("/api/street-info", methods=["POST"])
 def get_street_information():
@@ -85,7 +85,7 @@ def get_street_information():
         })
         
     except Exception as e:
-        return jsonify({"error": str(e)}), 500
+        return jsonify({"error": "Unable to complete the request. Please try again."}), 500
 
 @app.route("/api/search-streets", methods=["GET"])
 def search_streets():
@@ -105,7 +105,7 @@ def search_streets():
         })
         
     except Exception as e:
-        return jsonify({"error": str(e)}), 500
+        return jsonify({"error": "Unable to complete the request. Please try again."}), 500
 
 @app.route("/api/nearby-streets", methods=["POST"])
 def get_nearby_streets():
@@ -158,7 +158,7 @@ def get_nearby_streets():
             return jsonify({"error": "Failed to fetch street data"}), 500
             
     except Exception as e:
-        return jsonify({"error": str(e)}), 500
+        return jsonify({"error": "Unable to complete the request. Please try again."}), 500
 
 @app.route('/api/nearby-streets-enhanced', methods=['POST'])
 def get_nearby_streets_enhanced():
@@ -233,7 +233,7 @@ def get_nearby_streets_enhanced():
             
     except Exception as e:
         print(f"Error in nearby streets enhanced: {e}")
-        return jsonify({'success': False, 'error': str(e)})
+        return jsonify({'success': False, 'error': 'Unable to complete the request. Please try again.'})
 
 @app.route('/api/street-info-enhanced', methods=['POST'])
 def get_street_info_enhanced():
@@ -286,7 +286,7 @@ def get_street_info_enhanced():
         
     except Exception as e:
         print(f"Error getting enhanced street info: {e}")
-        return jsonify({'success': False, 'error': str(e)})
+        return jsonify({'success': False, 'error': 'Unable to complete the request. Please try again.'})
 
 def get_intelligent_street_explanation(street_name, city='', country=''):
     """Generate intelligent explanation based on street name patterns"""
