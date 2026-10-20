@@ -21,7 +21,8 @@ class ErrorPrivacyTests(unittest.TestCase):
         ]
         for url, body, owner, name, status in cases:
             with self.subTest(url=url), patch.object(owner, name, side_effect=RuntimeError(MARKER)):
-                response = self.client.get(url) if body is None else self.client.post(url, json=body)
+                with self.assertLogs(server.app.logger, level="ERROR"):
+                    response = self.client.get(url) if body is None else self.client.post(url, json=body)
                 self.assertEqual(response.status_code, status)
                 self.assertEqual(response.get_json()['error'], SAFE_ERROR)
                 self.assertNotIn(MARKER, response.get_data(as_text=True))
